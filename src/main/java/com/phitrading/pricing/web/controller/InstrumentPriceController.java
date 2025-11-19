@@ -3,6 +3,7 @@ package com.phitrading.pricing.web.controller;
 import com.phitrading.pricing.domain.service.InstrumentPriceService;
 import com.phitrading.pricing.web.dto.CreateInstrumentRequest;
 import com.phitrading.pricing.web.dto.InstrumentPriceResponse;
+import com.phitrading.pricing.web.dto.InstrumentPriceDto;
 import com.phitrading.pricing.web.dto.UpdatePriceRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -33,5 +34,10 @@ public class InstrumentPriceController {
     @GetMapping("/{symbol}/price")
     public InstrumentPriceResponse getPrice(@PathVariable String symbol) {
         return service.getPrice(symbol);
+    }
+
+    @GetMapping
+    public java.util.List<InstrumentPriceDto> listInstruments() {
+        return service.listAll();
     }
 }

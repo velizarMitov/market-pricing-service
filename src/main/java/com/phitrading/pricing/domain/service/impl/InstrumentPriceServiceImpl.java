@@ -7,6 +7,9 @@ import com.phitrading.pricing.domain.service.InstrumentPriceService;
 import com.phitrading.pricing.web.dto.CreateInstrumentRequest;
 import com.phitrading.pricing.web.dto.InstrumentPriceResponse;
 import com.phitrading.pricing.web.dto.UpdatePriceRequest;
+import com.phitrading.pricing.web.dto.InstrumentPriceDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InstrumentPriceServiceImpl implements InstrumentPriceService {
 
     private final InstrumentPriceRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(InstrumentPriceServiceImpl.class);
 
     public InstrumentPriceServiceImpl(InstrumentPriceRepository repository) {
         this.repository = repository;
@@ -47,6 +51,26 @@ public class InstrumentPriceServiceImpl implements InstrumentPriceService {
         InstrumentPrice entity = repository.findBySymbol(symbol)
                 .orElseThrow(() -> new InstrumentNotFoundException(symbol));
         return toResponse(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<InstrumentPriceDto> listAll() {
+        java.util.List<InstrumentPrice> all = repository.findAll();
+        java.util.List<InstrumentPriceDto> result = new java.util.ArrayList<>(all.size());
+        for (InstrumentPrice e : all) {
+            result.add(new InstrumentPriceDto(
+                    e.getId(),
+                    e.getSymbol(),
+                    e.getName(),
+                    e.getLastPrice(),
+                    e.getPreviousClose(),
+                    e.getUpdatedAt()
+            ));
+        }
+        // INFO log as required
+        log.info("Listing {} instruments", result.size());
+        return result;
     }
 
     private InstrumentPriceResponse toResponse(InstrumentPrice entity) {
