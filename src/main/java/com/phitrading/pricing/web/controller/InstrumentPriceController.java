@@ -7,6 +7,7 @@ import com.phitrading.pricing.web.dto.InstrumentPriceDto;
 import com.phitrading.pricing.web.dto.UpdatePriceRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -39,5 +40,11 @@ public class InstrumentPriceController {
     @GetMapping
     public java.util.List<InstrumentPriceDto> listInstruments() {
         return service.listAll();
+    }
+
+    @DeleteMapping("/{symbol}")
+    public ResponseEntity<Void> delete(@PathVariable String symbol) {
+        service.deleteBySymbol(symbol);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -8,4 +8,8 @@ import java.util.UUID;
 
 public interface InstrumentPriceRepository extends JpaRepository<InstrumentPrice, UUID> {
     Optional<InstrumentPrice> findBySymbol(String symbol);
+
+    Optional<InstrumentPrice> findBySymbolIgnoreCase(String symbol);
+
+    void deleteBySymbol(String symbol);
 }

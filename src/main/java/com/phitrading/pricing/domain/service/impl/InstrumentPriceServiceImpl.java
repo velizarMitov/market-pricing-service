@@ -10,6 +10,8 @@ import com.phitrading.pricing.web.dto.UpdatePriceRequest;
 import com.phitrading.pricing.web.dto.InstrumentPriceDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class InstrumentPriceServiceImpl implements InstrumentPriceService {
 
     @Override
     @Transactional
+    @CachePut(cacheNames = "instrumentPrices", key = "#result.symbol.toUpperCase()")
     public InstrumentPriceResponse createInstrument(CreateInstrumentRequest request) {
         InstrumentPrice entity = new InstrumentPrice();
         entity.setSymbol(request.getSymbol());
@@ -32,23 +35,30 @@ public class InstrumentPriceServiceImpl implements InstrumentPriceService {
         entity.setLastPrice(request.getInitialPrice());
         entity.setPreviousClose(request.getInitialPrice());
         InstrumentPrice saved = repository.save(entity);
-        return toResponse(saved);
+        InstrumentPriceResponse response = toResponse(saved);
+        log.info("Cache updated for symbol={} after create", response.getSymbol());
+        return response;
     }
 
     @Override
     @Transactional
+    @CachePut(cacheNames = "instrumentPrices", key = "#symbol.toUpperCase()")
     public InstrumentPriceResponse updatePrice(String symbol, UpdatePriceRequest request) {
-        InstrumentPrice entity = repository.findBySymbol(symbol)
+        InstrumentPrice entity = repository.findBySymbolIgnoreCase(symbol)
                 .orElseThrow(() -> new InstrumentNotFoundException(symbol));
         entity.setLastPrice(request.getNewPrice());
         InstrumentPrice saved = repository.save(entity);
-        return toResponse(saved);
+        InstrumentPriceResponse response = toResponse(saved);
+        log.info("Cache updated for symbol={} after price update", symbol);
+        return response;
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "instrumentPrices", key = "#symbol.toUpperCase()")
     public InstrumentPriceResponse getPrice(String symbol) {
-        InstrumentPrice entity = repository.findBySymbol(symbol)
+        log.info("Loading price for symbol={} from DB (cache miss)", symbol);
+        InstrumentPrice entity = repository.findBySymbolIgnoreCase(symbol)
                 .orElseThrow(() -> new InstrumentNotFoundException(symbol));
         return toResponse(entity);
     }
@@ -71,6 +81,16 @@ public class InstrumentPriceServiceImpl implements InstrumentPriceService {
         // INFO log as required
         log.info("Listing {} instruments", result.size());
         return result;
+    }
+
+    @Override
+    @Transactional
+    public void deleteBySymbol(String symbol) {
+        InstrumentPrice entity = repository.findBySymbolIgnoreCase(symbol)
+                .orElseThrow(() -> new InstrumentNotFoundException(symbol));
+        // Log INFO when a symbol is deleted: symbol and id
+        log.info("Deleting instrument symbol={} id={}", entity.getSymbol(), entity.getId());
+        repository.deleteBySymbol(entity.getSymbol());
     }
 
     private InstrumentPriceResponse toResponse(InstrumentPrice entity) {

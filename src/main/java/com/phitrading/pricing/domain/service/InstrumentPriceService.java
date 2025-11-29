@@ -16,4 +16,6 @@ public interface InstrumentPriceService {
     InstrumentPriceResponse getPrice(String symbol);
 
     List<InstrumentPriceDto> listAll();
+
+    void deleteBySymbol(String symbol);
 }
